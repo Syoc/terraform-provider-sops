@@ -32,7 +32,7 @@ builds:
 archives:
   - format: zip
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    extra_files:
+    files:
       - terraform-registry-manifest.json
 
 checksum:
