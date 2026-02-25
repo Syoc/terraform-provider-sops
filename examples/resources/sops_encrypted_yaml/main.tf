@@ -1,6 +1,6 @@
 terraform {
   required_providers {
-    sops = { source = "registry.terraform.io/syoc/sops" }
+    sops = { source = "registry.opentofu.org/syoc/sops" }
   }
 }
 
