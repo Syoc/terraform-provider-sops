@@ -22,14 +22,15 @@ var (
 type encryptedYAMLResource struct{ pd *sopsProviderData }
 
 type encryptedYAMLModel struct {
-	ID                types.String `tfsdk:"id"`
-	Content           types.String `tfsdk:"content"`
-	VaultKeyName      types.String `tfsdk:"vault_key_name"`
-	UnencryptedSuffix types.String `tfsdk:"unencrypted_suffix"`
-	EncryptedSuffix   types.String `tfsdk:"encrypted_suffix"`
-	UnencryptedRegex  types.String `tfsdk:"unencrypted_regex"`
-	EncryptedRegex    types.String `tfsdk:"encrypted_regex"`
-	Ciphertext        types.String `tfsdk:"ciphertext"`
+	ID                 types.String `tfsdk:"id"`
+	Content            types.String `tfsdk:"content"`
+	VaultKeyName       types.String `tfsdk:"vault_key_name"`
+	VaultTransitEngine types.String `tfsdk:"vault_transit_engine"`
+	UnencryptedSuffix  types.String `tfsdk:"unencrypted_suffix"`
+	EncryptedSuffix    types.String `tfsdk:"encrypted_suffix"`
+	UnencryptedRegex   types.String `tfsdk:"unencrypted_regex"`
+	EncryptedRegex     types.String `tfsdk:"encrypted_regex"`
+	Ciphertext         types.String `tfsdk:"ciphertext"`
 }
 
 func NewEncryptedYAMLResource() resource.Resource { return &encryptedYAMLResource{} }
@@ -78,6 +79,13 @@ at which point the resource is replaced and re-encrypted.`,
 			"vault_key_name": schema.StringAttribute{
 				Required:    true,
 				Description: "Name of the Vault Transit key used to wrap the data key.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"vault_transit_engine": schema.StringAttribute{
+				Optional:    true,
+				Description: "Vault Transit mount path for this resource. Overrides the provider-level vault_transit_engine. Defaults to 'transit'.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -196,11 +204,15 @@ func (r *encryptedYAMLResource) encrypt(data encryptedYAMLModel) (string, error)
 	if err != nil {
 		return "", err
 	}
+	transitEngine := data.VaultTransitEngine.ValueString()
+	if transitEngine == "" {
+		transitEngine = r.pd.vaultTransitEngine
+	}
 	opts := sopsencrypt.EncryptOpts{
 		UnencryptedSuffix: data.UnencryptedSuffix.ValueString(),
 		EncryptedSuffix:   data.EncryptedSuffix.ValueString(),
 		UnencryptedRegex:  data.UnencryptedRegex.ValueString(),
 		EncryptedRegex:    data.EncryptedRegex.ValueString(),
 	}
-	return sopsencrypt.EncryptToYAML(client, r.pd.vaultTransitEngine, data.VaultKeyName.ValueString(), data.Content.ValueString(), opts)
+	return sopsencrypt.EncryptToYAML(client, transitEngine, data.VaultKeyName.ValueString(), data.Content.ValueString(), opts)
 }

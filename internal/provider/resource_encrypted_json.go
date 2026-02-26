@@ -24,15 +24,16 @@ var (
 type encryptedJSONResource struct{ pd *sopsProviderData }
 
 type encryptedJSONModel struct {
-	ID                types.String `tfsdk:"id"`
-	Content           types.String `tfsdk:"content"`
-	VaultKeyName      types.String `tfsdk:"vault_key_name"`
-	UnencryptedSuffix types.String `tfsdk:"unencrypted_suffix"`
-	EncryptedSuffix   types.String `tfsdk:"encrypted_suffix"`
-	UnencryptedRegex  types.String `tfsdk:"unencrypted_regex"`
-	EncryptedRegex    types.String `tfsdk:"encrypted_regex"`
-	Pretty            types.Bool   `tfsdk:"pretty"`
-	Ciphertext        types.String `tfsdk:"ciphertext"`
+	ID                 types.String `tfsdk:"id"`
+	Content            types.String `tfsdk:"content"`
+	VaultKeyName       types.String `tfsdk:"vault_key_name"`
+	VaultTransitEngine types.String `tfsdk:"vault_transit_engine"`
+	UnencryptedSuffix  types.String `tfsdk:"unencrypted_suffix"`
+	EncryptedSuffix    types.String `tfsdk:"encrypted_suffix"`
+	UnencryptedRegex   types.String `tfsdk:"unencrypted_regex"`
+	EncryptedRegex     types.String `tfsdk:"encrypted_regex"`
+	Pretty             types.Bool   `tfsdk:"pretty"`
+	Ciphertext         types.String `tfsdk:"ciphertext"`
 }
 
 func NewEncryptedJSONResource() resource.Resource { return &encryptedJSONResource{} }
@@ -81,6 +82,13 @@ at which point the resource is replaced and re-encrypted.`,
 			"vault_key_name": schema.StringAttribute{
 				Required:    true,
 				Description: "Name of the Vault Transit key used to wrap the data key.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"vault_transit_engine": schema.StringAttribute{
+				Optional:    true,
+				Description: "Vault Transit mount path for this resource. Overrides the provider-level vault_transit_engine. Defaults to 'transit'.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -208,6 +216,10 @@ func (r *encryptedJSONResource) encrypt(data encryptedJSONModel) (string, error)
 	if err != nil {
 		return "", err
 	}
+	transitEngine := data.VaultTransitEngine.ValueString()
+	if transitEngine == "" {
+		transitEngine = r.pd.vaultTransitEngine
+	}
 	opts := sopsencrypt.EncryptOpts{
 		UnencryptedSuffix: data.UnencryptedSuffix.ValueString(),
 		EncryptedSuffix:   data.EncryptedSuffix.ValueString(),
@@ -215,5 +227,5 @@ func (r *encryptedJSONResource) encrypt(data encryptedJSONModel) (string, error)
 		EncryptedRegex:    data.EncryptedRegex.ValueString(),
 		PrettyJSON:        data.Pretty.ValueBool(),
 	}
-	return sopsencrypt.EncryptToJSON(client, r.pd.vaultTransitEngine, data.VaultKeyName.ValueString(), data.Content.ValueString(), opts)
+	return sopsencrypt.EncryptToJSON(client, transitEngine, data.VaultKeyName.ValueString(), data.Content.ValueString(), opts)
 }

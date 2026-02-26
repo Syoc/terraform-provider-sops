@@ -62,6 +62,7 @@ creation_rules:
 ## Argument Reference
 
 * `vault_key_name` - (Required) Name of the Vault Transit key referenced in every creation rule.
+* `vault_transit_engine` - (Optional) Vault Transit mount path for this data source. Overrides the provider-level `vault_transit_engine`. Defaults to `transit`.
 * `path_regexes` - (Optional) List of path regexes. Each entry becomes one `creation_rule` with a `path_regex` field. When omitted, a single catch-all creation rule with no `path_regex` is emitted, which matches all files.
 
 ## Attributes Reference

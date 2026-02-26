@@ -19,10 +19,11 @@ var (
 type sopsConfigDataSource struct{ pd *sopsProviderData }
 
 type sopsConfigModel struct {
-	ID           types.String `tfsdk:"id"`
-	VaultKeyName types.String `tfsdk:"vault_key_name"`
-	PathRegexes  types.List   `tfsdk:"path_regexes"`
-	Content      types.String `tfsdk:"content"`
+	ID                 types.String `tfsdk:"id"`
+	VaultKeyName       types.String `tfsdk:"vault_key_name"`
+	VaultTransitEngine types.String `tfsdk:"vault_transit_engine"`
+	PathRegexes        types.List   `tfsdk:"path_regexes"`
+	Content            types.String `tfsdk:"content"`
 }
 
 func NewSOPSConfigDataSource() datasource.DataSource { return &sopsConfigDataSource{} }
@@ -58,6 +59,10 @@ Use the output with the ` + "`local_file`" + ` resource to write the file to dis
 			"vault_key_name": schema.StringAttribute{
 				Required:    true,
 				Description: "Name of the Vault Transit key referenced in every creation rule.",
+			},
+			"vault_transit_engine": schema.StringAttribute{
+				Optional:    true,
+				Description: "Vault Transit mount path for this data source. Overrides the provider-level vault_transit_engine. Defaults to 'transit'.",
 			},
 			"path_regexes": schema.ListAttribute{
 				ElementType: types.StringType,
@@ -102,9 +107,14 @@ func (d *sopsConfigDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		}
 	}
 
+	transitEngine := data.VaultTransitEngine.ValueString()
+	if transitEngine == "" {
+		transitEngine = d.pd.vaultTransitEngine
+	}
+
 	content, err := sopsencrypt.GenerateSOPSConfig(
 		d.pd.vaultAddress,
-		d.pd.vaultTransitEngine,
+		transitEngine,
 		data.VaultKeyName.ValueString(),
 		pathRegexes,
 	)

@@ -57,6 +57,7 @@ output "encrypted_secrets" {
 
 * `content` - (Required, Sensitive) JSON-encoded document to encrypt. Use `jsonencode()` to produce this value.
 * `vault_key_name` - (Required) Name of the Vault Transit key used to wrap the data key.
+* `vault_transit_engine` - (Optional) Vault Transit mount path for this resource. Overrides the provider-level `vault_transit_engine`. Defaults to `transit`.
 * `encrypted_regex` - (Optional) Only values whose key name matches this regex are encrypted. Mutually exclusive with other scope options.
 * `encrypted_suffix` - (Optional) Only values whose key name ends with this suffix are encrypted. Mutually exclusive with other scope options.
 * `unencrypted_regex` - (Optional) Values whose key name matches this regex are left in plaintext; all others are encrypted. Mutually exclusive with other scope options.
